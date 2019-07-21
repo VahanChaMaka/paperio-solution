@@ -16,7 +16,7 @@ public final class Logger {
         return instance;
     }
 
-    public void log(String message){
+    public static void log(String message){
         if(isLocalRun) {
             try (FileWriter log = new FileWriter("local.log", true)) {
                 long time = System.currentTimeMillis();

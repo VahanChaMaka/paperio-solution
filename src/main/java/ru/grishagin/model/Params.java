@@ -36,10 +36,10 @@ public class Params {
             int speed = config.speed;
 
             List<Bonus> bonuses = new ArrayList<>();
-            for (Map<String, Integer> bonus : (List<Map<String, Integer>>) playerRawData.get(BONUSES)) {
-                String key = new ArrayList(bonus.keySet()).get(0).toString();
+            for (Map<String, Object> bonus : (List<Map<String, Object>>) playerRawData.get(BONUSES)) {
+                String key = bonus.get(TYPE_KEY).toString();
                 Bonus.BonusType type = Bonus.BonusType.valueOf(key);
-                bonuses.add(new Bonus(type, bonus.get(key)));
+                bonuses.add(new Bonus(type, Integer.parseInt(bonus.get(key).toString())));
 
                 //todo: adjust speed
             }

@@ -23,6 +23,21 @@ public class Vector {
         return new Vector(x, y);
     }
 
+    public double distance(Vector another){
+        return Math.sqrt((this.x-another.x)*(this.x-another.x) + (this.y-another.y)*(this.y-another.y));
+    }
+
+    public Vector invert(){
+        this.x = -x;
+        this.y = -y;
+
+        return this;
+    }
+
+    public static Vector sum(Vector one, Vector another){
+        return new Vector(one.x + another.x, one.y + another.y);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
