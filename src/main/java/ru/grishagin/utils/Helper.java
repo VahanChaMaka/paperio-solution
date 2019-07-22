@@ -20,7 +20,7 @@ public class Helper {
                 indexes = new Vector(1, 0);
                 break;
             default:
-                System.out.println("Warning! Wrong direction"); //lol what
+                Logger.log("Warning! Wrong direction"); //lol what
                 indexes = new Vector(0, 0);
         }
         return indexes;

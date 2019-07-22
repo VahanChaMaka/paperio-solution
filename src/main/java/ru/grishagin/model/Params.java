@@ -38,17 +38,22 @@ public class Params {
             List<Bonus> bonuses = new ArrayList<>();
             for (Map<String, Object> bonus : (List<Map<String, Object>>) playerRawData.get(BONUSES)) {
                 String key = bonus.get(TYPE_KEY).toString();
-                Bonus.BonusType type = Bonus.BonusType.valueOf(key);
+                Bonus.BonusType type = Bonus.BonusType.valueOf(key.toUpperCase());
                 bonuses.add(new Bonus(type, Integer.parseInt(bonus.get(key).toString())));
 
                 //todo: adjust speed
+            }
+
+            Object direction = playerRawData.get(DIRECTION);
+            if(direction == null){ //some shit, direction is null sometimes
+                direction = "right";
             }
 
             players.put(playerEntry.getKey(), new Player(playerEntry.getKey(),
                     (int)playerRawData.get(SCORE),
                     territory,
                     makeVectorFromArr((ArrayList<Integer>)playerRawData.get(POSITION)),
-                    Direction.valueOf(playerRawData.get(DIRECTION).toString().toUpperCase()),
+                    Direction.valueOf(direction.toString().toUpperCase()),
                     tail,
                     bonuses,
                     speed));
