@@ -38,8 +38,8 @@ public class Params {
             List<Bonus> bonuses = new ArrayList<>();
             for (Map<String, Object> bonus : (List<Map<String, Object>>) playerRawData.get(BONUSES)) {
                 String key = bonus.get(TYPE_KEY).toString();
-                Bonus.BonusType type = Bonus.BonusType.valueOf(key.toUpperCase());
-                bonuses.add(new Bonus(type, Integer.parseInt(bonus.get(key).toString())));
+                Bonus.BonusType type = Bonus.convertToType(key);
+                bonuses.add(new Bonus(type, Integer.parseInt(bonus.get(TICKS).toString())));
 
                 //todo: adjust speed
             }

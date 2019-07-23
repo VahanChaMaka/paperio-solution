@@ -103,8 +103,13 @@ public class StupidRandomStrategy implements Strategy {
                 myNeighbours = get8neighbours(positionAfterMove, me.getTerritory());
             }
 
+            //do not trap self
+            boolean isHomeAccessible = true;
+            if(!me.getTail().isEmpty() && !me.getTerritory().contains(positionAfterMove)) {
+                isHomeAccessible = !bsf(positionAfterMove, me.getTerritory().get(0), I).isEmpty();
+            }
 
-            isCorrectMove = !isHitsSelf && !isBorder && myNeighbours < 8;
+            isCorrectMove = !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible;
         }
         return newDirection;
     }
@@ -177,9 +182,11 @@ public class StupidRandomStrategy implements Strategy {
                     for (int j = current.y - 1; j <= current.y + 1; j++) {
                         if(i == current.x || j == current.y){ //connection 4 like +
                             Vector neighbour = new Vector(i, j);
-                            if(!visited.containsKey(neighbour)
+                            if(!visited.containsKey(neighbour) && !queue.contains(neighbour)
                                     && !neighbour.equals(excludeCellBehind) //cannot turn 180 degrees
-                                    && !params.getPlayer(playerId).getTail().contains(neighbour)) {//do not go through tail
+                                    && !params.getPlayer(playerId).getTail().contains(neighbour) //do not go through tail
+                                    && neighbour.x >=0 && neighbour.x < params.config.xSize //stay within field
+                                    && neighbour.y >=0 && neighbour.y < params.config.ySize) {
                                 visited.put(neighbour, current);
                                 queue.offer(neighbour);
                             }

@@ -25,22 +25,17 @@ public class Main {
             bot = new Bot(config);
             while ((line = in.readLine()) != null && line.length() != 0) {
                 JSONObject parsed = new JSONObject(line);
-                try {
-                    if(isLocalGame){
-                        startTime = System.currentTimeMillis();
-                    }
-
-                    JSONObject command = bot.onInput(parsed);
-
-                    if(isLocalGame){
-                        Logger.log("Execution time in ms: " + (System.currentTimeMillis() - startTime));
-                    }
-
-                    System.out.println(command.toString());
-                } catch (Exception e){
-                    Logger.log(e.toString());
-                    Logger.log(Arrays.toString(e.getStackTrace()));
+                if(isLocalGame){
+                    startTime = System.currentTimeMillis();
                 }
+
+                JSONObject command = bot.onInput(parsed);
+
+                if(isLocalGame){
+                    Logger.log("Execution time in ms: " + (System.currentTimeMillis() - startTime));
+                }
+
+                System.out.println(command.toString());
             }
         }
         catch (IOException e) {

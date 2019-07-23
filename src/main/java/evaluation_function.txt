@@ -1,0 +1,7 @@
+f(sim) = sum(c*capturedCellInShortlyClosedContour) + enemyKill + speedUp + saw + sawKill - enemyCanKillMe
+
+c - capture coefficient (1 for neutral, 5 for enemy's)
+enemyKill - 50
+speedUp - ??
+saw - 30
+sawKill - 150
