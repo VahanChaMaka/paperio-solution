@@ -3,8 +3,9 @@ package ru.grishagin;
 import org.json.JSONObject;
 import ru.grishagin.model.Direction;
 import ru.grishagin.model.Params;
-import ru.grishagin.strategy.StupidRandomStrategy;
+import ru.grishagin.strategy.BasicStrategy;
 import ru.grishagin.strategy.Strategy;
+import ru.grishagin.strategy.StupidRandomStrategy;
 import ru.grishagin.utils.Logger;
 
 import static ru.grishagin.Const.*;

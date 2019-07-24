@@ -12,14 +12,14 @@ import java.util.*;
 
 import static ru.grishagin.Const.I;
 
-public class StupidRandomStrategy implements Strategy {
+public abstract class BasicStrategy implements Strategy {
     Params params;
     Player me;
 
     private boolean isRetreating = false;
     private Deque<Vector> retreatingPath = new LinkedList<>();
 
-    public StupidRandomStrategy(Params params) {
+    public BasicStrategy(Params params) {
         this.params = params;
     }
 
@@ -59,62 +59,45 @@ public class StupidRandomStrategy implements Strategy {
         }
     }
 
-    private Direction doSomething(){
-        boolean isCorrectMove = false;
-        Direction newDirection = null;
-        while (!isCorrectMove) {
-            int rand = (int) (Math.random() * 4);
-            if (rand == 0) {
-                newDirection = Direction.LEFT;
-            } else if (rand == 1) {
-                newDirection = Direction.DOWN;
-            } else if (rand == 2) {
-                newDirection = Direction.RIGHT;
-            } else {
-                newDirection = Direction.UP;
+    protected abstract Direction doSomething();
+
+    protected boolean isValidMove(Vector currentPosition, Vector newPosition){
+        boolean not180Turn = !(currentPosition.x + newPosition.x == 0 && currentPosition.y + newPosition.y == 0);
+
+
+        Vector positionAfterMove = new Vector(me.getPosition().x + newPosition.x,
+                me.getPosition().y + newPosition.y);
+
+        boolean isHitsSelf = false;
+        for (Vector position : me.getTail()) {
+            if(position.equals(positionAfterMove)){
+                isHitsSelf = true;
+                break;
             }
-
-            Vector oldMove = Helper.convertToIndexes(me.getDirection());
-            Vector nextMove = Helper.convertToIndexes(newDirection);
-            if(oldMove.x + nextMove.x == 0 && oldMove.y + nextMove.y == 0){
-                continue;
-            }
-
-            Vector positionAfterMove = new Vector(me.getPosition().x + nextMove.x,
-                    me.getPosition().y + nextMove.y);
-
-            boolean isHitsSelf = false;
-            for (Vector position : me.getTail()) {
-                if(position.equals(positionAfterMove)){
-                    isHitsSelf = true;
-                    break;
-                }
-            }
-
-            boolean isBorder = false;
-            isBorder |= positionAfterMove.x < 0; //or -1???
-            isBorder |= positionAfterMove.y < 0;
-            isBorder |= positionAfterMove.x >= params.config.xSize;
-            isBorder |= positionAfterMove.y >= params.config.ySize;
-
-            //avoid going deep inside my territory
-            int myNeighbours = 0;
-            if(get8neighbours(me.getPosition(), me.getTerritory()) != 8){//I can be already inside my territory, it will cause infinite loop
-                myNeighbours = get8neighbours(positionAfterMove, me.getTerritory());
-            }
-
-            //do not trap self
-            boolean isHomeAccessible = true;
-            if(!me.getTail().isEmpty() && !me.getTerritory().contains(positionAfterMove)) {
-                isHomeAccessible = !bsf(positionAfterMove, me.getTerritory().get(0), I).isEmpty();
-            }
-
-            isCorrectMove = !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible;
         }
-        return newDirection;
+
+        boolean isBorder = false;
+        isBorder |= positionAfterMove.x < 0; //or -1???
+        isBorder |= positionAfterMove.y < 0;
+        isBorder |= positionAfterMove.x >= params.config.xSize;
+        isBorder |= positionAfterMove.y >= params.config.ySize;
+
+        //avoid going deep inside my territory
+        int myNeighbours = 0;
+        if(get8neighbours(me.getPosition(), me.getTerritory()) != 8){//I can be already inside my territory, it will cause infinite loop
+            myNeighbours = get8neighbours(positionAfterMove, me.getTerritory());
+        }
+
+        //do not trap self
+        boolean isHomeAccessible = true;
+        if(!me.getTail().isEmpty() && !me.getTerritory().contains(positionAfterMove)) {
+            isHomeAccessible = !bsf(positionAfterMove, me.getTerritory().get(0), I).isEmpty();
+        }
+
+        return not180Turn && !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible;
     }
 
-    private int get8neighbours(Vector cell, List<Vector> searchIn){
+    protected int get8neighbours(Vector cell, List<Vector> searchIn){
         int neighbours = 0;
         for (int i = cell.x-1; i <= cell.x+1; i++) {
             for (int j = cell.y - 1; j <= cell.y + 1; j++) {
@@ -129,7 +112,7 @@ public class StupidRandomStrategy implements Strategy {
         return neighbours;
     }
 
-    private Deque<Vector> buildFastestPath(TargetType type, String sourceId, String targetId){
+    protected Deque<Vector> buildFastestPath(TargetType type, String sourceId, String targetId){
         Vector sourcePosition = params.getPlayer(sourceId).getPosition();
         double shortestRay = Double.MAX_VALUE;
         List<Vector> targetCells = null;
@@ -158,7 +141,7 @@ public class StupidRandomStrategy implements Strategy {
         return path;
     }
 
-    private LinkedList<Vector> bsf(Vector startPoint, Vector endPoint, String playerId){
+    protected LinkedList<Vector> bsf(Vector startPoint, Vector endPoint, String playerId){
         Vector movingTo = Helper.convertToIndexes(params.getPlayer(playerId).getDirection()).invert();
         Vector excludeCellBehind = Vector.sum(params.getPlayer(playerId).getPosition(), movingTo);
 
