@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import ru.grishagin.model.Direction;
 import ru.grishagin.model.Params;
 import ru.grishagin.strategy.BasicStrategy;
+import ru.grishagin.strategy.PotentialFieldStrategy;
 import ru.grishagin.strategy.Strategy;
 import ru.grishagin.strategy.StupidRandomStrategy;
 import ru.grishagin.utils.Logger;
@@ -21,7 +22,7 @@ public class Bot {
         logger.log("Initial config: " + config.toString());
 
         params = new Params(config.getJSONObject(PARAMS_KEY));
-        strategy = new StupidRandomStrategy(params);
+        strategy = new PotentialFieldStrategy(params);
     }
 
     public JSONObject onInput(JSONObject input){
