@@ -38,8 +38,8 @@ public final class Logger {
 
     public static void drawSnapshot(Params params){
         if(isLocalRun) {
-            StringBuilder builder = new StringBuilder();
-            for (int j = 0; j < params.config.xSize; j++) {
+            StringBuilder builder = new StringBuilder("\n");
+            for (int j = params.config.xSize-1; j >= 0; j--) {
                 for (int i = 0; i < params.config.ySize; i++) {
                     boolean isEmpty = true;
                     for (Map.Entry<String, Player> playerEntry : params.players.entrySet()) {
@@ -86,8 +86,8 @@ public final class Logger {
 
     public static void drawArray(double[][] arr){
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < arr.length; i++) {
-            for (int j = 0; j < arr[i].length; j++) {
+        for (int j = arr.length-1; j >= 0; j--) {
+            for (int i = 0; i < arr[j].length; i++) {
                 if(arr[i][j] < 10 && arr[i][j] >= 0){
                     builder.append(" ");
                 }

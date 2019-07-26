@@ -6,6 +6,9 @@ import ru.grishagin.utils.Helper;
 import ru.grishagin.utils.Logger;
 import ru.grishagin.utils.Vector;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import static ru.grishagin.Const.I;
 
 public class PotentialFieldStrategy extends StupidRandomStrategy {
@@ -27,6 +30,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             for (int j = -FIELD_CENTER; j <= FIELD_CENTER; j++) {
                 if(i == 0 && j == 0){
                     field[i+FIELD_CENTER][j+FIELD_CENTER] = -99;
+                    continue;
                 }
 
                 if (get8neighbours(new Vector(currentPosition.x + i, currentPosition.y + j), me.getTerritory()) == 8) {
@@ -58,7 +62,8 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
         Logger.drawArray(field);
 
-        Vector nextMove = bsf(currentPosition, maxValueCoords, I).getFirst();
+        LinkedList<Vector> path = bsf(currentPosition, maxValueCoords, I);
+        Vector nextMove = path.getLast();
         if(!isValidMove(currentPosition, nextMove)){
             Logger.log("Wrong new direction");
             return super.doSomething();
