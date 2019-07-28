@@ -28,13 +28,24 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
         for (int i = -FIELD_CENTER; i <= FIELD_CENTER; i++) {
             for (int j = -FIELD_CENTER; j <= FIELD_CENTER; j++) {
+                Vector cell = new Vector(currentPosition.x + i, currentPosition.y + j);
                 if(i == 0 && j == 0){
                     field[i+FIELD_CENTER][j+FIELD_CENTER] = -99;
                     continue;
                 }
 
-                if (get8neighbours(new Vector(currentPosition.x + i, currentPosition.y + j), me.getTerritory()) == 8) {
+                if(cell.x < 0 || cell.y < 0 || cell.x >= params.config.xSize || cell.y >= params.config.ySize){
+                    field[i+FIELD_CENTER][j+FIELD_CENTER] = -98; //skip walls
+                    continue;
+                }
+
+                if (get8neighbours(cell, me.getTerritory()) == 8) {
                     field[i+FIELD_CENTER][j+FIELD_CENTER] = -10; //force to move out from my territory
+                    continue;
+                }
+
+                if(me.getTail().contains(cell)){
+                    field[i+FIELD_CENTER][j+FIELD_CENTER] = -11; //don't go to tail
                     continue;
                 }
 
@@ -48,12 +59,12 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             }
         }
 
-        double maxValue = Double.MIN_VALUE;
+        double maxValue = Double.NEGATIVE_INFINITY;
         Vector maxValueCoords = new Vector(0,0);
         for (int i = -FIELD_CENTER; i <= FIELD_CENTER; i++) {
             for (int j = -FIELD_CENTER; j <= FIELD_CENTER; j++) {
                 if(field[i + FIELD_CENTER][j + FIELD_CENTER] > maxValue){
-                    maxValue = field[i + FIELD_CENTER][i + FIELD_CENTER];
+                    maxValue = field[i + FIELD_CENTER][j + FIELD_CENTER];
                     maxValueCoords.setX(currentPosition.x + i);
                     maxValueCoords.setY(currentPosition.y + j);
                 }
@@ -63,6 +74,8 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
         Logger.drawArray(field);
 
         LinkedList<Vector> path = bsf(currentPosition, maxValueCoords, I);
+        Logger.log("c:" + currentPosition + ", next:" + maxValueCoords);
+        Logger.log(path.toString());
         Vector nextMove = path.getLast();
         if(!isValidMove(currentPosition, nextMove)){
             Logger.log("Wrong new direction");

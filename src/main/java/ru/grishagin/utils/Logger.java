@@ -52,19 +52,20 @@ public final class Logger {
 
                         for (Vector vector : playerEntry.getValue().getTail()) {
                             if (vector.x == i && vector.y == j) {
-                                if(playerEntry.getValue().getPosition().x == i && playerEntry.getValue().getPosition().y == j) {
-                                    builder.append(" ").append("x");
-                                    isEmpty = false;
-                                } else {
                                     builder.append("-").append(playerEntry.getKey());
                                     isEmpty = false;
-                                }
                             }
+                        }
+
+                        if(playerEntry.getValue().getPosition().x == i && playerEntry.getValue().getPosition().y == j) {
+                            builder.append(" ").append("x");
+                            //isEmpty = false;
+                            continue;
                         }
 
                         for (Map<String, Vector> bonus : params.bonuses) {
                             for (Map.Entry<String, Vector> bonusInstance : bonus.entrySet()) {
-                                if (bonusInstance.getValue().x == i && bonusInstance.getValue().y == j) {
+                                if (bonusInstance.getValue().x == i && bonusInstance.getValue().y == j && isEmpty) {
                                     builder.append(" ").append(bonusInstance.getKey());
                                     isEmpty = false;
                                 }
