@@ -2,6 +2,7 @@ package ru.grishagin.strategy;
 
 import ru.grishagin.model.Direction;
 import ru.grishagin.model.Params;
+import ru.grishagin.model.Player;
 import ru.grishagin.utils.Helper;
 import ru.grishagin.utils.Logger;
 import ru.grishagin.utils.Vector;
@@ -9,6 +10,7 @@ import ru.grishagin.utils.Vector;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static ru.grishagin.Const.I;
 
@@ -17,6 +19,10 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FIELD_CENTER = 8;
 
     private static final int TAIL_PENALTY = -2;
+    private static final int ENEMY_PENALTY = -4;
+    private static final int ENEMY_TERRITORY_BONUS = 3;
+    private static final int ENEMY_TAIL_BONUS = 5;
+    private static final int BONUS_BONUS = 3;
 
     private static final int FROM_ME_DISTANCE_MODIFIER = 6;
     private static final int FROM_MY_CELL_DISTANCE_MODIFIER = 6;
@@ -48,17 +54,12 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                         continue;
                     }
 
-                    if (get8neighbours(cell, me.getTerritory()) == 8) {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = -10; //force to move out from my territory
-                        continue;
-                    }
-
                     if (me.getTail().contains(cell)) {
                         field[i + FIELD_CENTER][j + FIELD_CENTER] = -11; //don't go to tail
                         continue;
                     }
 
-                    //move aside from my territory
+                    //move from my territory
                     double distanceFromOwnCell = Double.POSITIVE_INFINITY;
                     for (Vector myCell : me.getTerritory()) {
                         double distance = myCell.distance(cell);
@@ -69,15 +70,51 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                     if (distanceFromOwnCell > FROM_MY_CELL_DISTANCE_MODIFIER/2) {
                         field[i + FIELD_CENTER][j + FIELD_CENTER] = (FROM_MY_CELL_DISTANCE_MODIFIER - distanceFromOwnCell)*0.1;
                     } else {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = (distanceFromOwnCell)*0.1;
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] = (distanceFromOwnCell)*0.2;
+                    }
+
+                    boolean hasEnemyTail = false;
+                    for (Map.Entry<String, Player> player : params.players.entrySet()) {
+                        if(!player.getKey().equals(I)) {
+                            if (player.getValue().getTerritory().contains(cell)) {//go to enemy's territory
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] += ENEMY_TERRITORY_BONUS;
+                            }
+
+                            //try to kill enemy
+                            if(player.getValue().getTail().contains(cell)){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] += ENEMY_TAIL_BONUS;
+                                hasEnemyTail = true;
+                            }
+
+                            //don't come close to an enemy
+                            double distanceToEnemy = player.getValue().getPosition().distance(cell);
+                            if(distanceToEnemy < FIELD_CENTER){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] += (-1/(distanceToEnemy))*2;
+                            }
+                        }
+                    }
+
+                    //try to kill enemy on my territory or leave
+                    if (!hasEnemyTail && get8neighbours(cell, me.getTerritory()) == 8) {
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] = -9.99;
+                        continue;
+                    }
+
+                    //collect bonuses
+                    for (Map<String, Vector> bonus : params.bonuses) {
+                        for (Map.Entry<String, Vector> bonusEntry : bonus.entrySet()) {
+                            if(!bonusEntry.getKey().equalsIgnoreCase("s")){//exept slow
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] += BONUS_BONUS;
+                            }
+                        }
                     }
 
                     //prefer closest to me best points
                     double distanceFromMe = currentPosition.distance(cell);
                     if (distanceFromMe > FROM_ME_DISTANCE_MODIFIER/2) {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = field[i + FIELD_CENTER][j + FIELD_CENTER] + FROM_ME_DISTANCE_MODIFIER - distanceFromMe;
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] += FROM_ME_DISTANCE_MODIFIER - distanceFromMe;
                     } else {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = field[i + FIELD_CENTER][j + FIELD_CENTER] + distanceFromMe;
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] += distanceFromMe;
                     }
 
 
