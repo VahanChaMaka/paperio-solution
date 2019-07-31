@@ -43,24 +43,23 @@ public final class Logger {
                 for (int i = 0; i < params.config.ySize; i++) {
                     boolean isEmpty = true;
                     for (Map.Entry<String, Player> playerEntry : params.players.entrySet()) {
+                        if(playerEntry.getValue().getPosition().x == i && playerEntry.getValue().getPosition().y == j) {
+                            builder.append(" ").append("x");
+                            isEmpty = false;
+                        }
+
                         for (Vector vector : playerEntry.getValue().getTerritory()) {
-                            if (vector.x == i && vector.y == j) {
+                            if (vector.x == i && vector.y == j && isEmpty) {
                                 builder.append(" ").append(playerEntry.getKey());
                                 isEmpty = false;
                             }
                         }
 
                         for (Vector vector : playerEntry.getValue().getTail()) {
-                            if (vector.x == i && vector.y == j) {
+                            if (vector.x == i && vector.y == j && isEmpty) {
                                     builder.append("-").append(playerEntry.getKey());
                                     isEmpty = false;
                             }
-                        }
-
-                        if(playerEntry.getValue().getPosition().x == i && playerEntry.getValue().getPosition().y == j) {
-                            builder.append(" ").append("x");
-                            //isEmpty = false;
-                            continue;
                         }
 
                         for (Map<String, Vector> bonus : params.bonuses) {

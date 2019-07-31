@@ -31,6 +31,7 @@ public abstract class BasicStrategy implements Strategy {
 
         if(isRetreating){
             if(!retreatingPath.isEmpty()) {
+                reset();
                 return Helper.convertToDirection(me.getPosition(), retreatingPath.pollLast());
             } else {
                 isRetreating = false;
@@ -49,7 +50,7 @@ public abstract class BasicStrategy implements Strategy {
         Logger.log(pathToHome.toString());
         for (Map.Entry<String, Player> playerEntry : params.players.entrySet()) {
             if(!playerEntry.getKey().equals(I)) {//skip self
-                if (buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + 1) {
+                if (buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + 2) {
                     retreatingPath = pathToHome;
                     isRetreating = true;
                     Logger.log("I'm in danger!");
@@ -59,39 +60,40 @@ public abstract class BasicStrategy implements Strategy {
         }
     }
 
+    //do something in case of danger
+    protected void reset(){
+        //do nothing
+    }
+
     protected abstract Direction doSomething();
 
     protected boolean isValidMove(Vector currentPosition, Vector newPosition){
         boolean not180Turn = !(currentPosition.x + newPosition.x == 0 && currentPosition.y + newPosition.y == 0);
 
-
-        Vector positionAfterMove = new Vector(me.getPosition().x + newPosition.x,
-                me.getPosition().y + newPosition.y);
-
         boolean isHitsSelf = false;
         for (Vector position : me.getTail()) {
-            if(position.equals(positionAfterMove)){
+            if(position.equals(newPosition)){
                 isHitsSelf = true;
                 break;
             }
         }
 
         boolean isBorder = false;
-        isBorder |= positionAfterMove.x < 0; //or -1???
-        isBorder |= positionAfterMove.y < 0;
-        isBorder |= positionAfterMove.x >= params.config.xSize;
-        isBorder |= positionAfterMove.y >= params.config.ySize;
+        isBorder |= newPosition.x < 0; //or -1???
+        isBorder |= newPosition.y < 0;
+        isBorder |= newPosition.x >= params.config.xSize;
+        isBorder |= newPosition.y >= params.config.ySize;
 
         //avoid going deep inside my territory
         int myNeighbours = 0;
-        if(get8neighbours(me.getPosition(), me.getTerritory()) != 8){//I can be already inside my territory, it will cause infinite loop
-            myNeighbours = get8neighbours(positionAfterMove, me.getTerritory());
+        if(get8neighbours(currentPosition, me.getTerritory()) != 8){//I can be already inside my territory, it will cause infinite loop
+            myNeighbours = get8neighbours(newPosition, me.getTerritory());
         }
 
         //do not trap self
         boolean isHomeAccessible = true;
-        if(!me.getTail().isEmpty() && !me.getTerritory().contains(positionAfterMove)) {
-            isHomeAccessible = !bsf(positionAfterMove, me.getTerritory().get(0), I).isEmpty();
+        if(!me.getTail().isEmpty() && !me.getTerritory().contains(newPosition)) {
+            isHomeAccessible = !bsf(newPosition, me.getTerritory().get(0), I).isEmpty();
         }
 
         return not180Turn && !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible;

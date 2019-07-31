@@ -30,7 +30,7 @@ public class Helper {
         int deltaX = destination.x - position.x;
         int deltaY = destination.y - position.y;
 
-        if(deltaX != 0 && deltaY != 0 || deltaX > 1 || deltaX < -1 || deltaY > 1 || deltaY < -1){
+        if(deltaX != 0 && deltaY != 0 || deltaX > 1 || deltaX < -1 || deltaY > 1 || deltaY < -1 || (deltaX == 0 && deltaY == 0)){
             throw new IllegalArgumentException("Trying to calculate direction between wrong cells!" +
                     "\nPosition: " + position +
                     "\nDestination: " + destination);
