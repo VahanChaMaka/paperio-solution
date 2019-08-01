@@ -22,7 +22,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int ENEMY_PENALTY = -4;
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 5;
-    private static final int BONUS_BONUS = 3;
+    private static final int BONUS_BONUS = 10;
 
     private static final int FROM_ME_DISTANCE_MODIFIER = 6;
     private static final int FROM_MY_CELL_DISTANCE_MODIFIER = 6;
@@ -89,7 +89,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                             //don't come close to an enemy
                             double distanceToEnemy = player.getValue().getPosition().distance(cell);
                             if(distanceToEnemy < FIELD_CENTER){
-                                field[i + FIELD_CENTER][j + FIELD_CENTER] += (-1/(distanceToEnemy))*2;
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] += (1/(distanceToEnemy))*ENEMY_PENALTY;
                             }
                         }
                     }
@@ -154,7 +154,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
         Vector nextMove = path.pollLast();
         //Vector nextMove = getNextMove(field);
-        Logger.log("Next: " + nextMove.toString());
+        Logger.log("Current: " + currentPosition.toString() + ", next: " + nextMove.toString());
         if(!isValidMove(currentPosition, nextMove)){
             Logger.log("Wrong new direction! Cleaning path!");
             path.clear();

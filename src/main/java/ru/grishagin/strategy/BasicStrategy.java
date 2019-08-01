@@ -50,7 +50,17 @@ public abstract class BasicStrategy implements Strategy {
         Logger.log(pathToHome.toString());
         for (Map.Entry<String, Player> playerEntry : params.players.entrySet()) {
             if(!playerEntry.getKey().equals(I)) {//skip self
-                if (buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + 2) {
+
+                //check if path to home will lead closer to an enemy
+                boolean isPathUnsafe = false;
+                for (Vector homePathCell : pathToHome) {
+                    if(bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + 2){
+                        isPathUnsafe = true;
+                        break;
+                    }
+                }
+
+                if (isPathUnsafe || buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + 2) {
                     retreatingPath = pathToHome;
                     isRetreating = true;
                     Logger.log("I'm in danger!");
@@ -95,8 +105,18 @@ public abstract class BasicStrategy implements Strategy {
         if(!me.getTail().isEmpty() && !me.getTerritory().contains(newPosition)) {
             isHomeAccessible = !bsf(newPosition, me.getTerritory().get(0), I).isEmpty();
         }
+        
+        //check player to player collision
+        boolean isUnsafeCollision = false;
+        for (Map.Entry<String, Player> playerEntity : params.players.entrySet()) {
+            if(!playerEntity.getKey().equalsIgnoreCase(I)
+                    && playerEntity.getValue().getPosition().distance(newPosition) <= 1
+                    && playerEntity.getValue().getTail().size() >= me.getTail().size()){
+                isUnsafeCollision = true;
+            }
+        }
 
-        return not180Turn && !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible;
+        return not180Turn && !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible && !isUnsafeCollision;
     }
 
     protected int get8neighbours(Vector cell, List<Vector> searchIn){
