@@ -48,17 +48,17 @@ public final class Logger {
                             isEmpty = false;
                         }
 
-                        for (Vector vector : playerEntry.getValue().getTerritory()) {
+                        for (Vector vector : playerEntry.getValue().getTail()) {
                             if (vector.x == i && vector.y == j && isEmpty) {
-                                builder.append(" ").append(playerEntry.getKey());
+                                builder.append("-").append(playerEntry.getKey());
                                 isEmpty = false;
                             }
                         }
 
-                        for (Vector vector : playerEntry.getValue().getTail()) {
+                        for (Vector vector : playerEntry.getValue().getTerritory()) {
                             if (vector.x == i && vector.y == j && isEmpty) {
-                                    builder.append("-").append(playerEntry.getKey());
-                                    isEmpty = false;
+                                builder.append(" ").append(playerEntry.getKey());
+                                isEmpty = false;
                             }
                         }
 

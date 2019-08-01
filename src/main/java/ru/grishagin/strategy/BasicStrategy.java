@@ -27,6 +27,9 @@ public abstract class BasicStrategy implements Strategy {
     public Direction onTick() {
         me = params.getPlayer(I);
 
+        Logger.drawSnapshot(params);
+        Logger.log("Current position: " + me.getPosition());
+
         checkDanger();
 
         if(isRetreating){
@@ -54,7 +57,8 @@ public abstract class BasicStrategy implements Strategy {
                 //check if path to home will lead closer to an enemy
                 boolean isPathUnsafe = false;
                 for (Vector homePathCell : pathToHome) {
-                    if(bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + 2){
+                    if(playerEntry.getValue().getPosition().equals(homePathCell) //enemy already stands on path
+                            || bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + 2){
                         isPathUnsafe = true;
                         break;
                     }
@@ -91,8 +95,8 @@ public abstract class BasicStrategy implements Strategy {
         boolean isBorder = false;
         isBorder |= newPosition.x < 0; //or -1???
         isBorder |= newPosition.y < 0;
-        isBorder |= newPosition.x >= params.config.xSize;
-        isBorder |= newPosition.y >= params.config.ySize;
+        isBorder |= newPosition.x >= params.config.xSize - 1;
+        isBorder |= newPosition.y >= params.config.ySize - 1;
 
         //avoid going deep inside my territory
         int myNeighbours = 0;

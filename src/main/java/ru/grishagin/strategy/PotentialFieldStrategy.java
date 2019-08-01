@@ -19,7 +19,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FIELD_CENTER = 8;
 
     private static final int TAIL_PENALTY = -2;
-    private static final int ENEMY_PENALTY = -4;
+    private static final int ENEMY_PENALTY = -6;
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 5;
     private static final int BONUS_BONUS = 10;
@@ -35,8 +35,6 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
     @Override
     protected Direction doSomething() {
-        Logger.drawSnapshot(params);
-
         Vector currentPosition = me.getPosition();
 
         if(path.isEmpty()) {
@@ -49,7 +47,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                         continue;
                     }
 
-                    if (cell.x < 0 || cell.y < 0 || cell.x >= params.config.xSize || cell.y >= params.config.ySize) {
+                    if (cell.x < 0 || cell.y < 0 || cell.x >= params.config.xSize-1 || cell.y >= params.config.ySize-1) {
                         field[i + FIELD_CENTER][j + FIELD_CENTER] = -98; //skip walls
                         continue;
                     }
@@ -96,7 +94,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
                     //try to kill enemy on my territory or leave
                     if (!hasEnemyTail && get8neighbours(cell, me.getTerritory()) == 8) {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = -9.99;
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] = -5;
                         continue;
                     }
 

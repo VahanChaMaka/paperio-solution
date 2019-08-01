@@ -35,6 +35,7 @@ public class Bot {
 
             JSONObject command = new JSONObject();
             command.put(COMMAND, strategy.onTick().getValue());
+            Logger.log(command.toString());
             return command;
         } else {
             logger.log("wtf");
