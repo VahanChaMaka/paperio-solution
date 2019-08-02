@@ -27,8 +27,8 @@ public class StupidRandomStrategy extends BasicStrategy {
                 newDirection = Direction.UP;
             }
 
-            Vector oldPosition = Helper.convertToIndexes(me.getDirection());
-            Vector nextPosition = Helper.convertToIndexes(newDirection);
+            Vector oldPosition = me.getPosition();
+            Vector nextPosition = Vector.sum(oldPosition, Helper.convertToIndexes(newDirection));
 
             isCorrectMove = isValidMove(oldPosition, nextPosition);
         }

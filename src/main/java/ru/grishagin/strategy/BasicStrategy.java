@@ -13,6 +13,8 @@ import java.util.*;
 import static ru.grishagin.Const.I;
 
 public abstract class BasicStrategy implements Strategy {
+    private static final int HOME_PATH_SAFETY_INCREMENT = 3; //add to my home path size to ensure I will be home in time
+
     Params params;
     Player me;
 
@@ -58,13 +60,13 @@ public abstract class BasicStrategy implements Strategy {
                 boolean isPathUnsafe = false;
                 for (Vector homePathCell : pathToHome) {
                     if(playerEntry.getValue().getPosition().equals(homePathCell) //enemy already stands on path
-                            || bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + 2){
+                            || bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT){
                         isPathUnsafe = true;
                         break;
                     }
                 }
 
-                if (isPathUnsafe || buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + 2) {
+                if (isPathUnsafe || buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + HOME_PATH_SAFETY_INCREMENT) {
                     retreatingPath = pathToHome;
                     isRetreating = true;
                     Logger.log("I'm in danger!");
@@ -82,7 +84,7 @@ public abstract class BasicStrategy implements Strategy {
     protected abstract Direction doSomething();
 
     protected boolean isValidMove(Vector currentPosition, Vector newPosition){
-        boolean not180Turn = !(currentPosition.x + newPosition.x == 0 && currentPosition.y + newPosition.y == 0);
+        boolean not180Turn = !Vector.sum(newPosition, Helper.convertToIndexes(me.getDirection()).invert()).equals(newPosition);
 
         boolean isHitsSelf = false;
         for (Vector position : me.getTail()) {
@@ -115,12 +117,12 @@ public abstract class BasicStrategy implements Strategy {
         for (Map.Entry<String, Player> playerEntity : params.players.entrySet()) {
             if(!playerEntity.getKey().equalsIgnoreCase(I)
                     && playerEntity.getValue().getPosition().distance(newPosition) <= 1
-                    && playerEntity.getValue().getTail().size() >= me.getTail().size()){
+                    && playerEntity.getValue().getTail().size() <= me.getTail().size()){
                 isUnsafeCollision = true;
             }
         }
 
-        return not180Turn && !isHitsSelf && !isBorder && myNeighbours < 8 && isHomeAccessible && !isUnsafeCollision;
+        return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision;
     }
 
     protected int get8neighbours(Vector cell, List<Vector> searchIn){
@@ -129,6 +131,8 @@ public abstract class BasicStrategy implements Strategy {
             for (int j = cell.y - 1; j <= cell.y + 1; j++) {
                 if (!(i == cell.x && j == cell.y)) { //skip center cell
                     if(searchIn.contains(new Vector(i, j))){
+                        neighbours++;
+                    } else if(i < 0 || j < 0 || i >= params.config.xSize || j >= params.config.ySize){//consider walls as neighbours
                         neighbours++;
                     }
                 }

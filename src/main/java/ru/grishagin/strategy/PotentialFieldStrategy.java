@@ -9,7 +9,6 @@ import ru.grishagin.utils.Vector;
 
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import static ru.grishagin.Const.I;
@@ -19,12 +18,12 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FIELD_CENTER = 8;
 
     private static final int TAIL_PENALTY = -2;
-    private static final int ENEMY_PENALTY = -6;
+    private static final int ENEMY_PENALTY = 10; //make negative if use log
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 5;
     private static final int BONUS_BONUS = 10;
 
-    private static final int FROM_ME_DISTANCE_MODIFIER = 6;
+    private static final int FROM_ME_DISTANCE_MODIFIER = 4;
     private static final int FROM_MY_CELL_DISTANCE_MODIFIER = 6;
     //private double[][] field = new double[FIELD_SIZE][FIELD_SIZE];
     private Deque<Vector> path = new LinkedList<>();
@@ -36,6 +35,13 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     @Override
     protected Direction doSomething() {
         Vector currentPosition = me.getPosition();
+
+        //i can leave my territory and get killed instantly
+        if(!path.isEmpty() && me.getTerritory().contains(currentPosition)
+                && !me.getTerritory().contains(path.getLast())){
+            Logger.log("Leaving my territory, it's better to rebuild path");
+            path.clear();
+        }
 
         if(path.isEmpty()) {
             double[][] field = new double[FIELD_SIZE][FIELD_SIZE];
@@ -57,25 +63,13 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                         continue;
                     }
 
-                    //move from my territory
-                    double distanceFromOwnCell = Double.POSITIVE_INFINITY;
-                    for (Vector myCell : me.getTerritory()) {
-                        double distance = myCell.distance(cell);
-                        if( distance < distanceFromOwnCell){
-                            distanceFromOwnCell = distance;
-                        }
-                    }
-                    if (distanceFromOwnCell > FROM_MY_CELL_DISTANCE_MODIFIER/2) {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = (FROM_MY_CELL_DISTANCE_MODIFIER - distanceFromOwnCell)*0.1;
-                    } else {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = (distanceFromOwnCell)*0.2;
-                    }
-
                     boolean hasEnemyTail = false;
+                    boolean isEnemyTerritory = false;
                     for (Map.Entry<String, Player> player : params.players.entrySet()) {
                         if(!player.getKey().equals(I)) {
                             if (player.getValue().getTerritory().contains(cell)) {//go to enemy's territory
                                 field[i + FIELD_CENTER][j + FIELD_CENTER] += ENEMY_TERRITORY_BONUS;
+                                isEnemyTerritory = true;
                             }
 
                             //try to kill enemy
@@ -87,8 +81,24 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                             //don't come close to an enemy
                             double distanceToEnemy = player.getValue().getPosition().distance(cell);
                             if(distanceToEnemy < FIELD_CENTER){
-                                field[i + FIELD_CENTER][j + FIELD_CENTER] += (1/(distanceToEnemy))*ENEMY_PENALTY;
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] -= Math.log((1/(distanceToEnemy))*ENEMY_PENALTY);
                             }
+                        }
+                    }
+
+                    if(!isEnemyTerritory){//if it's free
+                        //move from my territory
+                        double distanceFromOwnCell = Double.POSITIVE_INFINITY;
+                        for (Vector myCell : me.getTerritory()) {
+                            double distance = myCell.distance(cell);
+                            if( distance < distanceFromOwnCell){
+                                distanceFromOwnCell = distance;
+                            }
+                        }
+                        if (distanceFromOwnCell > FROM_MY_CELL_DISTANCE_MODIFIER/2) {
+                            field[i + FIELD_CENTER][j + FIELD_CENTER] += (FROM_MY_CELL_DISTANCE_MODIFIER - distanceFromOwnCell)*0.1;
+                        } else {
+                            field[i + FIELD_CENTER][j + FIELD_CENTER] += (distanceFromOwnCell)*0.2;
                         }
                     }
 
