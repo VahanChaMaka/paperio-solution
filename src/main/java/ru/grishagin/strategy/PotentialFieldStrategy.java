@@ -9,16 +9,17 @@ import ru.grishagin.utils.Vector;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import static ru.grishagin.Const.I;
 
 public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FIELD_SIZE = 17;
-    private static final int FIELD_CENTER = 8;
+    private static final int FIELD_CENTER = FIELD_SIZE/2;
 
     private static final int TAIL_PENALTY = -2;
-    private static final int ENEMY_PENALTY = 10; //make negative if use log
+    private static final int ENEMY_PENALTY = 20; //make negative if use log
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 5;
     private static final int BONUS_BONUS = 10;
@@ -27,6 +28,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FROM_MY_CELL_DISTANCE_MODIFIER = 6;
     //private double[][] field = new double[FIELD_SIZE][FIELD_SIZE];
     private Deque<Vector> path = new LinkedList<>();
+    private String threatenedBy = null;
 
     public PotentialFieldStrategy(Params params) {
         super(params);
@@ -35,12 +37,25 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     @Override
     protected Direction doSomething() {
         Vector currentPosition = me.getPosition();
+        threatenedBy = null;
 
         //i can leave my territory and get killed instantly
         if(!path.isEmpty() && me.getTerritory().contains(currentPosition)
                 && !me.getTerritory().contains(path.getLast())){
             Logger.log("Leaving my territory, it's better to rebuild path");
+
+            //int shortestEnemyPath = Integer.MAX_VALUE;
+            for (Map.Entry<String, Player> player : params.players.entrySet()) {
+                if(!player.getKey().equalsIgnoreCase(I)){
+                    List<Vector> enemyPath = bsf(player.getValue().getPosition(), path.getLast(), player.getKey());
+                    if(enemyPath.size() < 4){
+                        threatenedBy = player.getKey();
+                    }
+                }
+            }
+
             path.clear();
+
         }
 
         if(path.isEmpty()) {
@@ -61,6 +76,33 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                     if (me.getTail().contains(cell)) {
                         field[i + FIELD_CENTER][j + FIELD_CENTER] = -11; //don't go to tail
                         continue;
+                    }
+
+                    if(threatenedBy != null){
+                        Vector distance = Vector.sum(me.getPosition().copy().invert(), params.getPlayer(threatenedBy).getPosition());
+                        if(distance.x >= 0){
+                            if(i >= distance.x){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] = -50;
+                                continue;
+                            }
+                        } else{
+                            if(i <= distance.x){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] = -50;
+                                continue;
+                            }
+                        }
+
+                        if(distance.y >= 0){
+                            if(j >= distance.y){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] = -50;
+                                continue;
+                            }
+                        } else{
+                            if(j <= distance.y){
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] = -50;
+                                continue;
+                            }
+                        }
                     }
 
                     boolean hasEnemyTail = false;
