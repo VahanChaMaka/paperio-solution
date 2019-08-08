@@ -94,11 +94,7 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
 
-        boolean isBorder = false;
-        isBorder |= newPosition.x < 0; //or -1???
-        isBorder |= newPosition.y < 0;
-        isBorder |= newPosition.x >= params.config.xSize - 1;
-        isBorder |= newPosition.y >= params.config.ySize - 1;
+        boolean isBorder = isBorder(newPosition);
 
         //avoid going deep inside my territory
         int myNeighbours = 0;
@@ -125,12 +121,22 @@ public abstract class BasicStrategy implements Strategy {
         return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision;
     }
 
+    private boolean isBorder(Vector cell){
+        boolean isBorder = false;
+        isBorder |= cell.x < 0; //or -1???
+        isBorder |= cell.y < 0;
+        isBorder |= cell.x >= params.config.xSize - 1;
+        isBorder |= cell.y >= params.config.ySize - 1;
+        return isBorder;
+    }
+
     protected int get8neighbours(Vector cell, List<Vector> searchIn){
         int neighbours = 0;
         for (int i = cell.x-1; i <= cell.x+1; i++) {
             for (int j = cell.y - 1; j <= cell.y + 1; j++) {
                 if (!(i == cell.x && j == cell.y)) { //skip center cell
-                    if(searchIn.contains(new Vector(i, j))){
+                    Vector neighbour = new Vector(i, j);
+                    if(searchIn.contains(neighbour) || isBorder(neighbour)){
                         neighbours++;
                     } else if(i < 0 || j < 0 || i >= params.config.xSize || j >= params.config.ySize){//consider walls as neighbours
                         neighbours++;

@@ -19,7 +19,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int FIELD_CENTER = FIELD_SIZE/2;
 
     private static final int TAIL_PENALTY = -2;
-    private static final int ENEMY_PENALTY = 20; //make negative if use log
+    private static final int ENEMY_PENALTY = 400; //make negative if use log
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 5;
     private static final int BONUS_BONUS = 10;
@@ -59,6 +59,16 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
         }
 
         if(path.isEmpty()) {
+            List<Vector> fullyInternalTerritory = new LinkedList<Vector>();
+            List<Vector> myBorders = new LinkedList<>();
+            for (Vector cell : me.getTerritory()) {
+                if (get8neighbours(cell, me.getTerritory()) == 8){
+                    fullyInternalTerritory.add(cell);
+                } else {
+                    myBorders.add(cell);
+                }
+            }
+
             double[][] field = new double[FIELD_SIZE][FIELD_SIZE];
             for (int i = -FIELD_CENTER; i <= FIELD_CENTER; i++) {
                 for (int j = -FIELD_CENTER; j <= FIELD_CENTER; j++) {
@@ -122,8 +132,11 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
                             //don't come close to an enemy
                             double distanceToEnemy = player.getValue().getPosition().distance(cell);
+                            if(distanceToEnemy < 1){
+                                distanceToEnemy = 1;
+                            }
                             if(distanceToEnemy < FIELD_CENTER){
-                                field[i + FIELD_CENTER][j + FIELD_CENTER] -= Math.log((1/(distanceToEnemy))*ENEMY_PENALTY);
+                                field[i + FIELD_CENTER][j + FIELD_CENTER] -= Math.log((1/(distanceToEnemy-1))*ENEMY_PENALTY);
                             }
                         }
                     }
@@ -145,8 +158,18 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                     }
 
                     //try to kill enemy on my territory or leave
-                    if (!hasEnemyTail && get8neighbours(cell, me.getTerritory()) == 8) {
-                        field[i + FIELD_CENTER][j + FIELD_CENTER] = -5;
+                    if (!hasEnemyTail && fullyInternalTerritory.contains(cell)) {
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] += -4;
+
+                        //don't go too deep inside my territory
+                        double closestBorderDistance = Double.POSITIVE_INFINITY;
+                        for (Vector myBorderCell : myBorders) {
+                            double distance = cell.distance(myBorderCell);
+                            if(distance < closestBorderDistance){
+                                closestBorderDistance = distance;
+                            }
+                        }
+                        field[i + FIELD_CENTER][j + FIELD_CENTER] += -closestBorderDistance;
                         continue;
                     }
 

@@ -30,6 +30,7 @@ public final class Logger {
                         calendar.get(Calendar.SECOND) + " -> ");
                 log.append(message);
                 log.append("\n\n");
+                log.flush();
             } catch (IOException e) {
                 e.printStackTrace();
             }
