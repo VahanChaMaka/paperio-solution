@@ -8,12 +8,16 @@ import java.util.*;
 import static ru.grishagin.Const.*;
 
 public class Params {
-    public final Config config;
+    public Config config;
     public final Map<String, Player> players = new HashMap<>();
     public final List<Map<String, Vector>> bonuses = new ArrayList<>();
 
     public Params(JSONObject config) {
         this.config = new Config(config.getInt(SPEED), config.getInt(X_CELLS_COUNT), config.getInt(Y_CELLS_COUNT), config.getInt(CELL_SIZE));
+    }
+
+    //private default constructor for deep copy
+    private Params(){
     }
 
     public void parse(JSONObject params){
@@ -66,5 +70,21 @@ public class Params {
 
     public Player getPlayer(String id){
         return players.get(id);
+    }
+
+    public Params deepCopy(){
+        Params newState = new Params();
+        newState.config = this.config;
+
+        for (Map.Entry<String, Player> playerEntry : players.entrySet()) {
+            newState.players.put(playerEntry.getKey(), playerEntry.getValue().copy());
+        }
+
+        for (Map<String, Vector> bonus : bonuses) {
+            String bonusKey = bonus.keySet().stream().findFirst().get();
+            newState.bonuses.add(Collections.singletonMap(bonusKey, bonus.get(bonusKey)));
+        }
+
+        return newState;
     }
 }

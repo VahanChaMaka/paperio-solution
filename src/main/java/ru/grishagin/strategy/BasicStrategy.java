@@ -7,7 +7,6 @@ import ru.grishagin.utils.Helper;
 import ru.grishagin.utils.Logger;
 import ru.grishagin.utils.Vector;
 
-import javax.swing.text.Position;
 import java.util.*;
 
 import static ru.grishagin.Const.I;
@@ -32,7 +31,12 @@ public abstract class BasicStrategy implements Strategy {
         Logger.drawSnapshot(params);
         Logger.log("Current position: " + me.getPosition());
 
-        checkDanger();
+        Direction nextMove = doSomething();
+        Params newState = Helper.makeStep(params, I, nextMove);
+        if(!me.getTerritory().contains(me.getPosition()) && checkDanger(newState)){
+            retreatingPath = buildFastestPath(params, TargetType.TERRITORY, I, I);
+            isRetreating = true;
+        }
 
         if(isRetreating){
             if(!retreatingPath.isEmpty()) {
@@ -43,37 +47,36 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
 
-        return doSomething();
+        return nextMove;
     }
 
-    private void checkDanger(){
-        if(me.getTerritory().contains(me.getPosition())){
-            return;
+    private boolean checkDanger(Params state){
+        if(state.getPlayer(I).getTerritory().contains(state.getPlayer(I).getPosition())){
+            return false;
         }
 
-        Deque<Vector> pathToHome = buildFastestPath(TargetType.TERRITORY, I, I);
+        Deque<Vector> pathToHome = buildFastestPath(state, TargetType.TERRITORY, I, I);
         Logger.log(pathToHome.toString());
-        for (Map.Entry<String, Player> playerEntry : params.players.entrySet()) {
+        for (Map.Entry<String, Player> playerEntry : state.players.entrySet()) {
             if(!playerEntry.getKey().equals(I)) {//skip self
 
                 //check if path to home will lead closer to an enemy
                 boolean isPathUnsafe = false;
                 for (Vector homePathCell : pathToHome) {
                     if(playerEntry.getValue().getPosition().equals(homePathCell) //enemy already stands on path
-                            || bsf(playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT){
+                            || bsf(state, playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT){
                         isPathUnsafe = true;
                         break;
                     }
                 }
 
-                if (isPathUnsafe || buildFastestPath(TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + HOME_PATH_SAFETY_INCREMENT) {
-                    retreatingPath = pathToHome;
-                    isRetreating = true;
+                if (isPathUnsafe || buildFastestPath(state, TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + HOME_PATH_SAFETY_INCREMENT) {
                     Logger.log("I'm in danger!");
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     //do something in case of danger
@@ -83,7 +86,7 @@ public abstract class BasicStrategy implements Strategy {
 
     protected abstract Direction doSomething();
 
-    protected boolean isValidMove(Vector currentPosition, Vector newPosition){
+    protected boolean isValidMove(Params state, Vector currentPosition, Vector newPosition){
         boolean not180Turn = !Vector.sum(newPosition, Helper.convertToIndexes(me.getDirection()).invert()).equals(newPosition);
 
         boolean isHitsSelf = false;
@@ -105,7 +108,7 @@ public abstract class BasicStrategy implements Strategy {
         //do not trap self
         boolean isHomeAccessible = true;
         if(!me.getTail().isEmpty() && !me.getTerritory().contains(newPosition)) {
-            isHomeAccessible = !bsf(newPosition, me.getTerritory().get(0), I).isEmpty();
+            isHomeAccessible = !bsf(state, newPosition, me.getTerritory().get(0), I).isEmpty();
         }
         
         //check player to player collision
@@ -148,21 +151,21 @@ public abstract class BasicStrategy implements Strategy {
         return neighbours;
     }
 
-    protected Deque<Vector> buildFastestPath(TargetType type, String sourceId, String targetId){
-        Vector sourcePosition = params.getPlayer(sourceId).getPosition();
+    protected Deque<Vector> buildFastestPath(Params state, TargetType type, String sourceId, String targetId){
+        Vector sourcePosition = state.getPlayer(sourceId).getPosition();
         double shortestRay = Double.MAX_VALUE;
         List<Vector> targetCells = null;
         switch (type){
             case TERRITORY:
-                targetCells = params.getPlayer(targetId).getTerritory();
+                targetCells = state.getPlayer(targetId).getTerritory();
                 break;
             case TAIL:
-                targetCells = params.getPlayer(targetId).getTail();
+                targetCells = state.getPlayer(targetId).getTail();
                 break;
         }
 
-        Vector movingTo = Helper.convertToIndexes(params.getPlayer(sourceId).getDirection()).invert();
-        targetCells.remove(Vector.sum(movingTo, params.getPlayer(sourceId).getPosition()));
+        Vector movingTo = Helper.convertToIndexes(state.getPlayer(sourceId).getDirection()).invert();
+        targetCells.remove(Vector.sum(movingTo, state.getPlayer(sourceId).getPosition()));
 
         Vector closestTargetCell = null;
         for (Vector cell : targetCells) {
@@ -172,14 +175,14 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
 
-        Deque<Vector> path = bsf(sourcePosition, closestTargetCell, sourceId);
+        Deque<Vector> path = bsf(state, sourcePosition, closestTargetCell, sourceId);
 
         return path;
     }
 
-    protected LinkedList<Vector> bsf(Vector startPoint, Vector endPoint, String playerId){
-        Vector movingTo = Helper.convertToIndexes(params.getPlayer(playerId).getDirection()).invert();
-        Vector excludeCellBehind = Vector.sum(params.getPlayer(playerId).getPosition(), movingTo);
+    protected LinkedList<Vector> bsf(Params state, Vector startPoint, Vector endPoint, String playerId){
+        Vector movingTo = Helper.convertToIndexes(state.getPlayer(playerId).getDirection()).invert();
+        Vector excludeCellBehind = Vector.sum(state.getPlayer(playerId).getPosition(), movingTo);
 
         LinkedList<Vector> path = new LinkedList<>();
         Queue<Vector> queue = new LinkedList<>();
@@ -203,9 +206,9 @@ public abstract class BasicStrategy implements Strategy {
                             Vector neighbour = new Vector(i, j);
                             if(!visited.containsKey(neighbour) && !queue.contains(neighbour)
                                     && !neighbour.equals(excludeCellBehind) //cannot turn 180 degrees
-                                    && !params.getPlayer(playerId).getTail().contains(neighbour) //do not go through tail
-                                    && neighbour.x >=0 && neighbour.x < params.config.xSize //stay within field
-                                    && neighbour.y >=0 && neighbour.y < params.config.ySize) {
+                                    && !state.getPlayer(playerId).getTail().contains(neighbour) //do not go through tail
+                                    && neighbour.x >=0 && neighbour.x < state.config.xSize //stay within field
+                                    && neighbour.y >=0 && neighbour.y < state.config.ySize) {
                                 visited.put(neighbour, current);
                                 queue.offer(neighbour);
                             }
@@ -215,5 +218,20 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
         return path;
+    }
+
+    protected Deque<Vector> squarify(List<Vector> path){
+        Deque<Vector> newPath = new LinkedList<>();
+        newPath.add(path.get(0));
+
+        Vector diff = Vector.sum(path.get(path.size()-1).copy().invert(), path.get(0));
+        int xSign = diff.x < 0 ? -1 : 1;
+        int ySing = diff.y < 0 ? -1 : 1;
+
+        for (int i = 1; i < diff.x * xSign; i++) {
+
+        }
+
+        return null;
     }
 }

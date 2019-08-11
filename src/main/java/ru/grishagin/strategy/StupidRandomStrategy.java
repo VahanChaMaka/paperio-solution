@@ -30,7 +30,7 @@ public class StupidRandomStrategy extends BasicStrategy {
             Vector oldPosition = me.getPosition();
             Vector nextPosition = Vector.sum(oldPosition, Helper.convertToIndexes(newDirection));
 
-            isCorrectMove = isValidMove(oldPosition, nextPosition);
+            isCorrectMove = isValidMove(params, oldPosition, nextPosition);
         }
         return newDirection;
     }

@@ -9,6 +9,10 @@ public class Bonus {
         this.duration = duration;
     }
 
+    public Bonus copy(){
+        return new Bonus(this.type, this.duration);
+    }
+
     public static BonusType convertToType(String value){
         switch (value){
             case "s":

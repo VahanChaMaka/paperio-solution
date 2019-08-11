@@ -1,6 +1,8 @@
 package ru.grishagin.utils;
 
 import ru.grishagin.model.Direction;
+import ru.grishagin.model.Params;
+import ru.grishagin.model.Player;
 
 public class Helper {
 
@@ -47,5 +49,22 @@ public class Helper {
         } else {
             throw new IllegalArgumentException();
         }
+    }
+
+    public static Params makeStep(Params state, String playerId, Direction direction){
+        Params newState = state.deepCopy();
+
+        Player player = newState.getPlayer(playerId);
+        Vector newPosition = Vector.sum(player.getPosition(), convertToIndexes(direction));
+        if(player.getTerritory().contains(newPosition)){
+            if(player.getTail().size() != 0){
+                //todo: fill contour
+            }
+        } else {
+            player.setPosition(newPosition);
+            player.getTail().add(newPosition);
+        }
+
+        return newState;
     }
 }

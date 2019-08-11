@@ -21,7 +21,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     private static final int TAIL_PENALTY = -2;
     private static final int ENEMY_PENALTY = 400; //make negative if use log
     private static final int ENEMY_TERRITORY_BONUS = 3;
-    private static final int ENEMY_TAIL_BONUS = 5;
+    private static final int ENEMY_TAIL_BONUS = 10;
     private static final int BONUS_BONUS = 10;
 
     private static final int FROM_ME_DISTANCE_MODIFIER = 4;
@@ -47,7 +47,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             //int shortestEnemyPath = Integer.MAX_VALUE;
             for (Map.Entry<String, Player> player : params.players.entrySet()) {
                 if(!player.getKey().equalsIgnoreCase(I)){
-                    List<Vector> enemyPath = bsf(player.getValue().getPosition(), path.getLast(), player.getKey());
+                    List<Vector> enemyPath = bsf(params, player.getValue().getPosition(), path.getLast(), player.getKey());
                     if(enemyPath.size() < 4){
                         threatenedBy = player.getKey();
                     }
@@ -215,7 +215,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
             Logger.drawArray(field);
 
-            path = bsf(currentPosition, maxValueCoords, I);
+            path = bsf(params, currentPosition, maxValueCoords, I);
 
             Logger.log("c:" + currentPosition + ", target:" + maxValueCoords + ", current direction: " + me.getDirection());
             Logger.log(path.toString());
@@ -228,7 +228,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
         Vector nextMove = path.pollLast();
         //Vector nextMove = getNextMove(field);
         Logger.log("Current: " + currentPosition.toString() + ", next: " + nextMove.toString());
-        if(!isValidMove(currentPosition, nextMove)){
+        if(!isValidMove(params, currentPosition, nextMove)){
             Logger.log("Wrong new direction! Cleaning path!");
             path.clear();
             return super.doSomething();
