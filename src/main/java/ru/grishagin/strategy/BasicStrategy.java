@@ -70,7 +70,7 @@ public abstract class BasicStrategy implements Strategy {
                     }
                 }
 
-                if (isPathUnsafe || buildFastestPath(state, TargetType.TAIL, playerEntry.getKey(), I).size() <= pathToHome.size() + HOME_PATH_SAFETY_INCREMENT) {
+                if (isPathUnsafe || buildFastestPath(state, TargetType.TAIL, playerEntry.getKey(), I).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT) {
                     Logger.log("I'm in danger!");
                     return true;
                 }
@@ -113,15 +113,23 @@ public abstract class BasicStrategy implements Strategy {
         
         //check player to player collision
         boolean isUnsafeCollision = false;
+        boolean canBeKilled = false;
         for (Map.Entry<String, Player> playerEntity : params.players.entrySet()) {
             if(!playerEntity.getKey().equalsIgnoreCase(I)
                     && playerEntity.getValue().getPosition().distance(newPosition) <= 1
                     && playerEntity.getValue().getTail().size() <= me.getTail().size()){
                 isUnsafeCollision = true;
             }
+
+            if(!playerEntity.getKey().equalsIgnoreCase(I)
+                    && !me.getTerritory().contains(newPosition)
+                    && me.getTerritory().contains(currentPosition)
+                    && playerEntity.getValue().getPosition().distance(newPosition) <= 4){
+                canBeKilled = true;
+            }
         }
 
-        return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision;
+        return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision && !canBeKilled;
     }
 
     private boolean isBorder(Vector cell){
@@ -219,6 +227,8 @@ public abstract class BasicStrategy implements Strategy {
         }
         return path;
     }
+
+    protected Deque<Vector> floyd
 
     protected Deque<Vector> squarify(List<Vector> path){
         Deque<Vector> newPath = new LinkedList<>();

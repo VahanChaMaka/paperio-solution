@@ -135,7 +135,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                             if(distanceToEnemy < 1){
                                 distanceToEnemy = 1;
                             }
-                            if(distanceToEnemy < FIELD_CENTER){
+                            if(distanceToEnemy < 5){
                                 field[i + FIELD_CENTER][j + FIELD_CENTER] -= Math.log((1/(distanceToEnemy-1))*ENEMY_PENALTY);
                             }
                         }
