@@ -47,7 +47,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             //int shortestEnemyPath = Integer.MAX_VALUE;
             for (Map.Entry<String, Player> player : params.players.entrySet()) {
                 if(!player.getKey().equalsIgnoreCase(I)){
-                    List<Vector> enemyPath = bsf(params, player.getValue().getPosition(), path.getLast(), player.getKey());
+                    List<Vector> enemyPath = bsf(params, player.getValue().getPosition(), path.getLast(), player.getKey(), true).get(0);
                     if(enemyPath.size() < 4){
                         threatenedBy = player.getKey();
                     }
@@ -215,7 +215,26 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
             Logger.drawArray(field);
 
-            path = bsf(params, currentPosition, maxValueCoords, I);
+            List<LinkedList<Vector>> paths = bsf(params, currentPosition, maxValueCoords, I, false);
+            double evaluation = Double.NEGATIVE_INFINITY;
+            for (LinkedList<Vector> path : paths) {
+                double tmpEvaluation = 0;
+                for (Vector vector : path) {
+                    int i = vector.x - currentPosition.x + FIELD_CENTER;
+                    int j = vector.y - currentPosition.y + FIELD_CENTER;
+                    if(i < FIELD_SIZE && j < FIELD_SIZE) {
+                        tmpEvaluation = tmpEvaluation + field[i][j];
+                    } else {//don't use paths outside potential fields
+                      tmpEvaluation = Double.NEGATIVE_INFINITY;
+                      break;
+                    }
+                }
+
+                if(tmpEvaluation >= evaluation){
+                    evaluation = tmpEvaluation;
+                    this.path = path;
+                }
+            }
 
             Logger.log("c:" + currentPosition + ", target:" + maxValueCoords + ", current direction: " + me.getDirection());
             Logger.log(path.toString());
@@ -254,6 +273,56 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             }
         }
         return maxValueCoords;
+    }
+
+    //start/end point in terms of i j in array. Path also contains i j
+    private static List<Deque<Vector>> getAllPaths(Vector startPoint, Vector endPoint, Deque<Vector> path_, List<Deque<Vector>> allPaths, double[][] field){
+        for (int k = 0; k < allPaths.size(); k++) {
+            Deque<Vector> path = allPaths.get(k);
+            if(path.size() > 10){
+                return allPaths;
+            }
+
+            Vector lastCell = path.peekLast();
+            if (lastCell.equals(endPoint)){
+                return allPaths;
+            }
+
+            for (int i = lastCell.x - 1; i <= lastCell.x + 1; i++) {
+                if (i < 0 || i >= field.length) {
+                    continue;
+                }
+                for (int j = lastCell.y - 1; j <= lastCell.y + 1; j++) {
+                    if (j < 0 || j >= field[i].length) {
+                        continue;
+                    }
+
+                    if (!(i == lastCell.x && j == lastCell.y) && (i == lastCell.x || j == lastCell.y)) {
+                        Vector neighbour = new Vector(i, j);
+
+                        if (!path.contains(neighbour)) {
+                            Deque<Vector> pathCopy = new LinkedList<>();
+                            for (Vector pathElement : path) {
+                                pathCopy.offer(pathElement);
+                            }
+                            allPaths.add(pathCopy);
+                            pathCopy.add(neighbour);
+                            boolean isFullCopy = false;
+                            for (Deque<Vector> oneOfPaths : allPaths) {
+                                if (oneOfPaths.equals(pathCopy)){
+                                    isFullCopy = true;
+                                }
+                            }
+
+                            if (!isFullCopy) {
+                                getAllPaths(startPoint, endPoint, pathCopy, allPaths, field);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return allPaths;
     }
 
     @Override

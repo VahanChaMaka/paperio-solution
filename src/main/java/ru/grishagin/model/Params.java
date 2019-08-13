@@ -9,6 +9,7 @@ import static ru.grishagin.Const.*;
 
 public class Params {
     public Config config;
+    public int tickNum;
     public final Map<String, Player> players = new HashMap<>();
     public final List<Map<String, Vector>> bonuses = new ArrayList<>();
 
@@ -23,6 +24,8 @@ public class Params {
     public void parse(JSONObject params){
         players.clear();
         bonuses.clear();//TODO: parse bonuses
+
+        tickNum = params.getInt(TICK_NUM);
 
         for (Map.Entry<String, Object> playerEntry : ((params.getJSONObject(PLAYERS).toMap())).entrySet()) {
             Map<String, Object> playerRawData = (Map<String, Object>)playerEntry.getValue();
@@ -75,6 +78,7 @@ public class Params {
     public Params deepCopy(){
         Params newState = new Params();
         newState.config = this.config;
+        newState.tickNum = this.tickNum;
 
         for (Map.Entry<String, Player> playerEntry : players.entrySet()) {
             newState.players.put(playerEntry.getKey(), playerEntry.getValue().copy());

@@ -57,6 +57,12 @@ public abstract class BasicStrategy implements Strategy {
 
         Deque<Vector> pathToHome = buildFastestPath(state, TargetType.TERRITORY, I, I);
         Logger.log(pathToHome.toString());
+
+        //in the end of the match return home to get more points
+        if (pathToHome.size() + HOME_PATH_SAFETY_INCREMENT > (params.config.MAX_TICKS - state.tickNum)/state.getPlayer(I).getSpeed()){
+            return true;
+        }
+
         for (Map.Entry<String, Player> playerEntry : state.players.entrySet()) {
             if(!playerEntry.getKey().equals(I)) {//skip self
 
@@ -64,7 +70,7 @@ public abstract class BasicStrategy implements Strategy {
                 boolean isPathUnsafe = false;
                 for (Vector homePathCell : pathToHome) {
                     if(playerEntry.getValue().getPosition().equals(homePathCell) //enemy already stands on path
-                            || bsf(state, playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey()).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT){
+                            || bsf(state, playerEntry.getValue().getPosition(), homePathCell, playerEntry.getKey(), true).get(0).size() < pathToHome.size() + HOME_PATH_SAFETY_INCREMENT){
                         isPathUnsafe = true;
                         break;
                     }
@@ -108,7 +114,7 @@ public abstract class BasicStrategy implements Strategy {
         //do not trap self
         boolean isHomeAccessible = true;
         if(!me.getTail().isEmpty() && !me.getTerritory().contains(newPosition)) {
-            isHomeAccessible = !bsf(state, newPosition, me.getTerritory().get(0), I).isEmpty();
+            isHomeAccessible = !bsf(state, newPosition, me.getTerritory().get(0), I, true).get(0).isEmpty();
         }
         
         //check player to player collision
@@ -183,30 +189,36 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
 
-        Deque<Vector> path = bsf(state, sourcePosition, closestTargetCell, sourceId);
+        Deque<Vector> path = bsf(state, sourcePosition, closestTargetCell, sourceId, true).get(0);
 
         return path;
     }
 
-    protected LinkedList<Vector> bsf(Params state, Vector startPoint, Vector endPoint, String playerId){
+    protected List<LinkedList<Vector>> bsf(Params state, Vector startPoint, Vector endPoint, String playerId, boolean nearest){
         Vector movingTo = Helper.convertToIndexes(state.getPlayer(playerId).getDirection()).invert();
         Vector excludeCellBehind = Vector.sum(state.getPlayer(playerId).getPosition(), movingTo);
 
-        LinkedList<Vector> path = new LinkedList<>();
+        List<LinkedList<Vector>> paths = new ArrayList<>();
+
         Queue<Vector> queue = new LinkedList<>();
         Map<Vector, Vector> visited = new HashMap<>(); //nextCell -> cameFrom (key->value)
         queue.offer(startPoint);
 
-        while (!queue.isEmpty()){
+        int iterations = 0;
+        while (!queue.isEmpty() && iterations < 10000){
             Vector current = queue.poll();
             if (current.equals(endPoint)) {//path was found
+                LinkedList<Vector> path = new LinkedList<>();
                 path.add(endPoint);
                 Vector cameFrom = visited.get(current);
                 while (!cameFrom.equals(startPoint)){//return to start by path
                     path.add(cameFrom);
                     cameFrom = visited.get(cameFrom);
                 }
-                return path;
+                paths.add(path);
+                if(nearest){
+                    return paths;
+                }
             } else {
                 for (int i = current.x-1; i <= current.x+1; i++) {
                     for (int j = current.y - 1; j <= current.y + 1; j++) {
@@ -224,11 +236,17 @@ public abstract class BasicStrategy implements Strategy {
                     }
                 }
             }
+            iterations++;
         }
-        return path;
-    }
 
-    protected Deque<Vector> floyd
+        if (paths.isEmpty()){
+            Logger.log("Cannot find any path for " + playerId + "! Start point " + startPoint
+                    + ", end point " + endPoint);
+            paths.add(new LinkedList<>());
+        }
+
+        return paths;
+    }
 
     protected Deque<Vector> squarify(List<Vector> path){
         Deque<Vector> newPath = new LinkedList<>();

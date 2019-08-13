@@ -61,6 +61,10 @@ public class Player {
         return direction;
     }
 
+    public int getSpeed() {
+        return speed;
+    }
+
     public void setScore(int score) {
         this.score = score;
     }

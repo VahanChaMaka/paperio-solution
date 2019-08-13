@@ -1,6 +1,8 @@
 package ru.grishagin.model;
 
 public class Config {
+    public final int MAX_TICKS = 1499;
+
     public final int speed;
     public final int xSize;
     public final int ySize;

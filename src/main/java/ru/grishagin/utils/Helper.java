@@ -53,6 +53,7 @@ public class Helper {
 
     public static Params makeStep(Params state, String playerId, Direction direction){
         Params newState = state.deepCopy();
+        newState.tickNum++;
 
         Player player = newState.getPlayer(playerId);
         Vector newPosition = Vector.sum(player.getPosition(), convertToIndexes(direction));
