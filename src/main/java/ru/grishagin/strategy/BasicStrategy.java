@@ -56,7 +56,7 @@ public abstract class BasicStrategy implements Strategy {
         }
 
         Deque<Vector> pathToHome = buildFastestPath(state, TargetType.TERRITORY, I, I);
-        Logger.log(pathToHome.toString());
+        Logger.log("Path to home: " + pathToHome.toString());
 
         //in the end of the match return home to get more points
         if (pathToHome.size() + HOME_PATH_SAFETY_INCREMENT > (params.config.MAX_TICKS - state.tickNum)/state.getPlayer(I).getSpeed()){
@@ -135,7 +135,7 @@ public abstract class BasicStrategy implements Strategy {
             }
         }
 
-        return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision && !canBeKilled;
+        return not180Turn && !isHitsSelf && !isBorder /*&& myNeighbours < 8*/ && isHomeAccessible && !isUnsafeCollision /*&& !canBeKilled*/;
     }
 
     private boolean isBorder(Vector cell){

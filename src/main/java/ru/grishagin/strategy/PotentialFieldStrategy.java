@@ -7,19 +7,19 @@ import ru.grishagin.utils.Helper;
 import ru.grishagin.utils.Logger;
 import ru.grishagin.utils.Vector;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static ru.grishagin.Const.I;
 
 public class PotentialFieldStrategy extends StupidRandomStrategy {
+    private static final long EXECUTION_TIME_RESTRICTION_MS = 100;
+
     private static final int FIELD_SIZE = 17;
     private static final int FIELD_CENTER = FIELD_SIZE/2;
 
     private static final int TAIL_PENALTY = -2;
-    private static final int ENEMY_PENALTY = 400; //make negative if use log
+    private static final int ENEMY_PENALTY = 400;
     private static final int ENEMY_TERRITORY_BONUS = 3;
     private static final int ENEMY_TAIL_BONUS = 10;
     private static final int BONUS_BONUS = 10;
@@ -207,22 +207,31 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                 for (int j = -FIELD_CENTER; j <= FIELD_CENTER; j++) {
                     if (field[i + FIELD_CENTER][j + FIELD_CENTER] > maxValue) {
                         maxValue = field[i + FIELD_CENTER][j + FIELD_CENTER];
-                        maxValueCoords.setX(currentPosition.x + i);
-                        maxValueCoords.setY(currentPosition.y + j);
+                        maxValueCoords.setX(i + FIELD_CENTER);
+                        maxValueCoords.setY(j + FIELD_CENTER);
                     }
                 }
             }
 
             Logger.drawArray(field);
 
-            List<LinkedList<Vector>> paths = bsf(params, currentPosition, maxValueCoords, I, false);
+            //bsf(params, currentPosition, maxValueCoords, I, false)
+
+            List<Deque<Vector>> paths = new LinkedList<>();
+            Deque<Vector> initialPath = new LinkedList<>();
+            initialPath.offer(new Vector(8, 8));
+            paths.add(initialPath);
+            paths = getAllPaths(maxValueCoords, paths, field, System.currentTimeMillis())
+                    .stream()
+                    .filter(path -> path.contains(maxValueCoords)).peek(Deque::poll)
+                    .collect(Collectors.toList());
             double evaluation = Double.NEGATIVE_INFINITY;
-            for (LinkedList<Vector> path : paths) {
+            for (Deque<Vector> path : paths) {
                 double tmpEvaluation = 0;
                 for (Vector vector : path) {
-                    int i = vector.x - currentPosition.x + FIELD_CENTER;
-                    int j = vector.y - currentPosition.y + FIELD_CENTER;
-                    if(i < FIELD_SIZE && j < FIELD_SIZE) {
+                    int i = vector.x;
+                    int j = vector.y;
+                    if(i < FIELD_SIZE && j < FIELD_SIZE && i >= 0 && j >= 0) {
                         tmpEvaluation = tmpEvaluation + field[i][j];
                     } else {//don't use paths outside potential fields
                       tmpEvaluation = Double.NEGATIVE_INFINITY;
@@ -232,11 +241,24 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
 
                 if(tmpEvaluation >= evaluation){
                     evaluation = tmpEvaluation;
-                    this.path = path;
+                    this.path = path.stream().peek(cell -> {
+                        cell.setX(cell.x + currentPosition.x - FIELD_CENTER);
+                        cell.setY(cell.y + currentPosition.y - FIELD_CENTER);
+                    }).collect(Collectors.toCollection(LinkedList::new));
                 }
             }
 
-            Logger.log("c:" + currentPosition + ", target:" + maxValueCoords + ", current direction: " + me.getDirection());
+            Logger.log("Target (in field):" + maxValueCoords + ", current direction: " + me.getDirection());
+
+            if(path.isEmpty()){
+                Logger.log("Failed to build optimal path, making shortest");
+                maxValueCoords.setX(maxValueCoords.x - FIELD_CENTER + currentPosition.x);
+                maxValueCoords.setY(maxValueCoords.y - FIELD_CENTER + currentPosition.y);
+                List<Vector> fastestPath = bsf(params, currentPosition, maxValueCoords, I, false).get(0);
+                Collections.reverse(fastestPath);
+                path = new LinkedList<>(fastestPath);
+            }
+
             Logger.log(path.toString());
             if(path.isEmpty()){
                 Logger.log("Path is empty! Do random");
@@ -244,7 +266,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             }
         }
 
-        Vector nextMove = path.pollLast();
+        Vector nextMove = path.poll();
         //Vector nextMove = getNextMove(field);
         Logger.log("Current: " + currentPosition.toString() + ", next: " + nextMove.toString());
         if(!isValidMove(params, currentPosition, nextMove)){
@@ -252,7 +274,15 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
             path.clear();
             return super.doSomething();
         } else {
-            return Helper.convertToDirection(currentPosition, nextMove);
+            try {
+                return Helper.convertToDirection(currentPosition, nextMove);
+            } catch (IllegalArgumentException e){
+                Logger.log(e.getMessage());
+                for (StackTraceElement stackTraceElement : e.getStackTrace()) {
+                    Logger.log(stackTraceElement.toString());
+                }
+                return super.doSomething();
+            }
         }
     }
 
@@ -276,10 +306,10 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
     }
 
     //start/end point in terms of i j in array. Path also contains i j
-    private static List<Deque<Vector>> getAllPaths(Vector startPoint, Vector endPoint, Deque<Vector> path_, List<Deque<Vector>> allPaths, double[][] field){
+    private List<Deque<Vector>> getAllPaths(Vector endPoint, List<Deque<Vector>> allPaths, double[][] field, long startTime){
         for (int k = 0; k < allPaths.size(); k++) {
             Deque<Vector> path = allPaths.get(k);
-            if(path.size() > 10){
+            if(path.size() > 10 || System.currentTimeMillis() - startTime > EXECUTION_TIME_RESTRICTION_MS){
                 return allPaths;
             }
 
@@ -300,7 +330,12 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                     if (!(i == lastCell.x && j == lastCell.y) && (i == lastCell.x || j == lastCell.y)) {
                         Vector neighbour = new Vector(i, j);
 
-                        if (!path.contains(neighbour)) {
+                        Vector movingTo = Helper.convertToIndexes(me.getDirection()).invert();
+                        Vector excludeCellBehind = null;
+                        if(path.size() == 1) {
+                           excludeCellBehind = new Vector(8 + movingTo.x, 8 + movingTo.y);
+                        }
+                        if (!path.contains(neighbour) && !neighbour.equals(excludeCellBehind)) {
                             Deque<Vector> pathCopy = new LinkedList<>();
                             for (Vector pathElement : path) {
                                 pathCopy.offer(pathElement);
@@ -315,7 +350,7 @@ public class PotentialFieldStrategy extends StupidRandomStrategy {
                             }
 
                             if (!isFullCopy) {
-                                getAllPaths(startPoint, endPoint, pathCopy, allPaths, field);
+                                getAllPaths(endPoint, allPaths, field, startTime);
                             }
                         }
                     }
