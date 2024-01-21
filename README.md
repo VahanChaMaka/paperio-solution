@@ -1,5 +1,5 @@
 # Bot for Mini AI Cup #4 based on paper.io game
-Strategy for AI contest https://aicups.ru/. Rules of the contest is described here (but olny in Russian): https://github.com/MailRuChamps/miniaicups/tree/master/paperio.
+Strategy for AI contest [https://aicups.ru/](https://aicups.ru/rating/4/). Rules of the contest is described here (but olny in Russian): https://github.com/MailRuChamps/miniaicups/tree/master/paperio.
 In general - rules are almost the same as original classic http://paper-io.com/ game with some modifications. Six strateges from different participants fight simultaneously in square arena, each bot has full information about arena state. Points are granted for territory capture (neutral or rival's), rival killing or using saw.
 
 The highest place I took is 34 out of ~300, but at the end I didn't succeed to pass to the next round. My solution is not ideal, code is full of dirty hacks, magic numbers, code duplications etc. I needed to write as fast as possible, try new ideas quickly, and didn't have much time for refactoring. This repo was private during contest and I didn't edit anything before publication intentionally, showed as it was.
